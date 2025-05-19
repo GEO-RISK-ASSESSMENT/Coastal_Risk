@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"/>
+  <title>위험평가지도</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    #map { width:100%; height:100vh; margin:0; padding:0; }
+    #controls { position:fixed; top:10px; left:10px; z-index:1000; background:white; padding:10px; }
+    #controls select, button { display:block; margin-bottom:5px; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <select id="fieldSelect">
+      <option value="">-- 컬럼 선택 --</option>
+      <option value="FTR_IDN">FTR_IDN</option><option value="해역">해역</option><option value="SD_NM">SD_NM</option><option value="SGG_NM">SGG_NM</option><option value="ADM_NM">ADM_NM</option><option value="length">length</option><option value="강우">강우</option><option value="강풍">강풍</option><option value="해일">해일</option><option value="파랑">파랑</option><option value="해수면상승">해수면상승</option><option value="인구">인구</option><option value="건물">건물</option><option value="도로">도로</option><option value="양식장">양식장</option><option value="농경지">농경지</option><option value="산발공">산발공</option><option value="어항항만">어항항만</option><option value="시설재배">시설재배</option><option value="고령인구">고령인구</option><option value="위험시설물">위험시설물</option><option value="침수면적">침수면적</option><option value="지하반지하">지하반지하</option><option value="침식지역">침식지역</option><option value="급경사지">급경사지</option><option value="문화재">문화재</option><option value="대피소">대피소</option><option value="관리기금">관리기금</option><option value="공무원수">공무원수</option><option value="자율방재단">자율방재단</option><option value="시민보험">시민보험</option><option value="위해성">위해성</option><option value="노출성">노출성</option><option value="취약성">취약성</option><option value="위험지수">위험지수</option>
+    </select>
+    <button id="osmBtn">일반지도</button>
+    <button id="satBtn">위성지도</button>
+  </div>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    var center = [35.33089510771134, 129.00796298684696];
+    var map = L.map('map').setView(center, 11);
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' });
+    var sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+    osm.addTo(map);
+
+    fetch('data.geojson').then(r=>r.json()).then(data=>{
+      window.geoLayer = L.geoJSON(data, {
+        style:()=>({color:'#000', weight:1, fillOpacity:0.6, fillColor:'#ccc'}),
+        onEachFeature:(feature, layer)=>layer.bindPopup('')
+      }).addTo(map);
+    });
+
+    function getColor(v) {
+      return v===1? '#d9ef8b' :
+             v===2? '#fee08b' :
+             v===3? '#fc8d59' :
+             v===4? '#d73027' :
+                     '#ccc';
+    }
+
+    document.getElementById('fieldSelect').addEventListener('change', function() {
+      var fld = this.value;
+      window.geoLayer.eachLayer(layer=>{
+        var v = layer.feature.properties[fld];
+        layer.setStyle({ fillColor: getColor(v) });
+        layer.bindPopup('ID:'+layer.feature.properties['ID']+'<br>'+fld+':'+v);
+      });
+    });
+
+    document.getElementById('osmBtn').onclick = function() { map.addLayer(osm); map.removeLayer(sat); };
+    document.getElementById('satBtn').onclick = function() { map.addLayer(sat); map.removeLayer(osm); };
+  </script>
+</body>
+</html>
